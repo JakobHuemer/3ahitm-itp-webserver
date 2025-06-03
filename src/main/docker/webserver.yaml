@@ -1,0 +1,14 @@
+services:
+  webserver:
+    image: webserver
+    build:
+      context: ./webserver
+      dockerfile: ./src/main/docker/Dockerfile
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: curl -fsS http://localhost:8080
+    ports:
+      - 8080:8080
