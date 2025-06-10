@@ -3,6 +3,7 @@ include:
 
 services:
   postgres:
+    container_name: postgres
     image: postgres
     restart: always
     environment:
@@ -10,7 +11,7 @@ services:
       POSTGRES_PASSWORD: app
       POSTGRES_DB: db
     healthcheck:
-      test: curl -fsS localhost:8080
+      test: ["CMD", "pg_isready"]
     volumes:
       - pgdata:/var/lib/postgresql/data
 

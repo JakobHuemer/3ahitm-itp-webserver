@@ -2,19 +2,20 @@
 package at.htl.leonding.webserver;
 
 import javax.net.ServerSocketFactory;
-import java.io.*;
+import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.Objects;
 import java.util.Scanner;
 
 
 public class WebServer {
 
     private final static int PORT = 8080;
-    
+
     public static void main( String[] args ) throws IOException {
         ServerSocket socket = ServerSocketFactory.getDefault().createServerSocket( PORT );
+
+        Sql.init();
 
         while ( true ) {
             Socket client = socket.accept();
@@ -32,36 +33,72 @@ public class WebServer {
             String requestLine = sc.nextLine();
             String[] requestParts = requestLine.split( " " );
             String method = requestParts[ 0 ];
-            String path = requestParts[ 1 ];
 
-            if ( !"GET".equals( method ) || !( path.equals( "/" ) || path.equals( "/index.html" ) ) ) {
-                System.out.println( "Unsupported request: " + requestLine );
+            if ( !method.equals( "GET" ) ) {
+                outputStream.write( ( "HTTP/1.1 405 Method Not Allowed\n"
+                        + "Content-Type: text/plain\n"
+                        + "Content-Length: 23\n"
+                        + "Allow: GET, POST\n\n"
+                        + "Method Not Supported" ).getBytes() );
                 return;
             }
 
-            System.out.println( "Done Getting REQUEST" );
-
-            System.out.println("Sending HTTP Header");
-
-            String responseHeader = """
-                    HTTP/1.1 200 OK
-                    Content-Type: text/html; charset=UTF-8
-                    Server: Custom Java Server (Java 21)
-                    Connection: close
-                    
-                    """;
-
-            outputStream.write( responseHeader.getBytes() );
-
-            try (InputStream is = WebServer.class.getResourceAsStream("/index.html")) {
-                if (is == null) {
-                    throw new RuntimeException("Could not find index.html in classpath");
-                }
-                System.out.println("Sending HTML");
-                outputStream.write(is.readAllBytes());
-            } catch (IOException e) {
-                throw new RuntimeException(e);
+            if ( requestParts.length < 3 ) {
+                outputStream.write( ( "HTTP/1.1 400 Bad Request\n"
+                        + "Content-Type: text/plain\n"
+                        + "Content-Length: 15\n\n"
+                        + "Bad Request" ).getBytes() );
+                return;
             }
+
+            String path = requestParts[ 1 ];
+
+            // match path for /greeting/digit
+
+            if ( !path.matches( "/greeting/\\d+" ) ) {
+                outputStream.write( ( """
+                        HTTP/1.1 404 Not Found
+                        Content-Type: text/plain
+                        Content-Length: 13
+                        
+                        Not Found""" ).getBytes() );
+                return;
+            }
+
+            // extract digit from path
+
+            long id = Long.parseLong( path.substring( 10 ) );
+
+            var greeting = Sql.getGreeting( id );
+
+            // return greeting
+
+            if ( greeting == null ) {
+                outputStream.write( ( """
+                        HTTP/1.1 404 Not Found
+                        Content-Type: text/plain
+                        Content-Length: 13
+                        
+                        Not Found""" ).getBytes() );
+                return;
+            }
+
+            String responseBody = greeting.greeting();
+            String response = "HTTP/1.1 200 OK\n"
+                    + "Content-Type: text/plain\n"
+                    + "Content-Length: " + responseBody.length() + "\n\n"
+                    + responseBody;
+
+            outputStream.write( response.getBytes() );
+            outputStream.flush();
+
+            System.out.println(
+                    "Answered request for "
+                            + path
+                            + " with greeting: "
+                            + greeting.greeting()
+            );
+
 
         } catch ( IOException e ) {
             throw new RuntimeException( e );
