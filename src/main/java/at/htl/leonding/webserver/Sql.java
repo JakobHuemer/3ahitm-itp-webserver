@@ -6,6 +6,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 public class Sql {
@@ -46,6 +48,28 @@ public class Sql {
                 }
                 return null;
             }
+        } catch ( SQLException e ) {
+            throw new RuntimeException( e );
+        }
+    }
+
+    public static List<Greeting> getAll() {
+        String sql = """
+                select id, greeting
+                from app.greeting
+                """;
+
+        var list = new ArrayList<Greeting>();
+
+        try ( var conn = Database.getConnection();
+              var stmt = conn.prepareStatement( sql ) ) {
+
+            try ( var rs = stmt.executeQuery() ) {
+                while ( rs.next() ) {
+                    list.add( new Greeting( rs.getLong( "id" ), rs.getString( "greeting" ) ) );
+                }
+            }
+            return list;
         } catch ( SQLException e ) {
             throw new RuntimeException( e );
         }

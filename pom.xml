@@ -6,7 +6,7 @@
 
     <groupId>at.htl.leonding.webserver</groupId>
     <artifactId>web-server</artifactId>
-    <version>0.0.3</version>
+    <version>0.0.4</version>
 
     <properties>
         <maven.compiler.source>21</maven.compiler.source>

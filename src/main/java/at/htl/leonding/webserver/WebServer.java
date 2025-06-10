@@ -55,6 +55,36 @@ public class WebServer {
 
             // match path for /greeting/digit
 
+            if ( path.equals( "/greeting" ) || path.equals( "/greeting/" ) ) {
+
+                var greetings = Sql.getAll();
+
+                // return in html table format
+
+                StringBuilder sb = new StringBuilder();
+
+                sb.append( "<html><body><table>" );
+                sb.append( "<tr><th>ID</th><th>Greeting</th></tr>" );
+                for ( var greeting : greetings ) {
+                    sb.append( "<tr><td>" )
+                            .append( greeting.id() )
+                            .append( "</td><td>" )
+                            .append( greeting.greeting() )
+                            .append( "</td></tr>" );
+                }
+                sb.append( "</table></body></html>" );
+                String responseBody = sb.toString();
+
+                String response = "HTTP/1.1 200 OK\n"
+                        + "Content-Type: text/html\n"
+                        + "Content-Length: " + responseBody.length() + "\n\n"
+                        + responseBody;
+
+                outputStream.write( response.getBytes() );
+                outputStream.flush();
+                return;
+            }
+
             if ( !path.matches( "/greeting/\\d+" ) ) {
                 outputStream.write( ( """
                         HTTP/1.1 404 Not Found
